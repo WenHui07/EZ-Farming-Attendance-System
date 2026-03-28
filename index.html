@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>EZ Farming Sdn Bhd - Complete Attendance System</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- React and ReactDOM -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <!-- FullCalendar -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Login Styles */
+        .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 90vh; }
+        .login-card { background: white; border-radius: 32px; padding: 40px; max-width: 450px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo i { font-size: 60px; background: linear-gradient(135deg, #2e7d32, #1b5e20); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .logo h2 { font-size: 24px; margin-top: 10px; color: #333; }
+        .logo p { color: #666; font-size: 14px; margin-top: 5px; }
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #999; font-size: 18px; }
+        .input-group input { width: 100%; padding: 14px 20px 14px 45px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; transition: all 0.3s; }
+        .input-group input:focus { outline: none; border-color: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
+        .login-btn { width: 100%; background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(46,125,50,0.3); }
+        .error-message { background: #ffebee; color: #c62828; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; text-align: center; }
+        
+        /* Main App Styles */
+        .card { background: white; border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+        .datetime-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 20px; color: white; text-align: center; }
+        .current-date { font-size: 18px; opacity: 0.9; margin-bottom: 8px; }
+        .current-time { font-size: 48px; font-weight: 700; letter-spacing: 2px; font-family: monospace; }
+        h1 { font-size: 1.8rem; background: linear-gradient(135deg, #2e7d32, #1b5e20); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .badge { background: #e8f5e9; padding: 8px 16px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; color: #2e7d32; }
+        button { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
+        button:hover { background: #1b5e20; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
+        .btn-small { padding: 6px 14px; font-size: 0.75rem; }
+        .btn-danger { background: #d32f2f; }
+        .btn-danger:hover { background: #c62828; }
+        .btn-warning { background: #f57c00; }
+        .btn-primary { background: #1976d2; }
+        .btn-lunch { background: #ff9800; }
+        .btn-edit-time { background: #9c27b0; }
+        .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 20px; margin-top: 20px; }
+        .employee-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-left: 5px solid #2e7d32; transition: transform 0.2s; }
+        .employee-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .employee-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .status { padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 10px; }
+        .status-checked-in { background: #c8e6c9; color: #1b5e20; animation: pulse 2s infinite; }
+        .status-on-lunch { background: #fff3e0; color: #f57c00; animation: pulse 2s infinite; }
+        .status-checked-out { background: #ffecb3; color: #ff6f00; }
+        .status-late { background: #ffcdd2; color: #c62828; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .time-info { font-size: 0.8rem; color: #555; margin: 12px 0; background: #f5f5f5; padding: 8px; border-radius: 12px; }
+        .lunch-info { background: #fff3e0; border-left: 3px solid #ff9800; }
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        .location-badge { font-size: 0.7rem; color: #666; margin-top: 8px; padding: 4px 8px; background: #f0f0f0; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 28px; padding: 24px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 0.9rem; transition: all 0.3s; }
+        input:focus { outline: none; border-color: #2e7d32; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .report-table th, .report-table td { border-bottom: 1px solid #eee; padding: 12px 8px; text-align: left; }
+        .report-table th { background: #f5f5f5; font-weight: 600; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 16px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-number { font-size: 28px; font-weight: 700; }
+        .stat-label { font-size: 12px; opacity: 0.9; margin-top: 5px; }
+        .calendar-summary { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .summary-card { flex: 1; background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; padding: 15px; border-radius: 16px; text-align: center; }
+        .summary-number { font-size: 32px; font-weight: 700; }
+        .summary-label { font-size: 12px; opacity: 0.9; margin-top: 5px; }
+        .users-list { max-height: 400px; overflow-y: auto; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .user-item:hover { background: #f5f5f5; }
+        .user-info { flex: 1; }
+        .user-username { font-weight: 600; color: #333; }
+        .user-name { font-size: 0.8rem; color: #666; margin-top: 2px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+        .legend { display: flex; gap: 20px; justify-content: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+        .history-list { max-height: 500px; overflow-y: auto; }
+        .history-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+        .history-item:hover { background: #f5f5f5; }
+        .history-date { font-weight: 600; color: #2e7d32; }
+        .history-time { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .history-status { font-size: 0.7rem; display: inline-block; padding: 2px 8px; border-radius: 12px; margin-top: 4px; }
+        .history-status-late { background: #ffcdd2; color: #c62828; }
+        .history-status-ontime { background: #c8e6c9; color: #2e7d32; }
+        @media (max-width: 640px) { .employee-grid { grid-template-columns: 1fr; } .header { flex-direction: column; align-items: flex-start; } .current-time { font-size: 32px; } }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+    // ========== EZ FARMING ATTENDANCE SYSTEM - FULLY FUNCTIONAL ==========
+    
+    // Storage Keys
+    const STORAGE_EMPLOYEES = "ez_farming_employees";
+    const STORAGE_ATTENDANCE = "ez_farming_attendance";
+    const STORAGE_USERS = "ez_farming_users";
+    const STORAGE_LUNCH_BREAKS = "ez_farming_lunch_breaks";
+    const STORAGE_EDIT_HISTORY = "ez_farming_edit_history";
+    
+    // Office location (Kuala Lumpur area)
+    const OFFICE_LAT = 3.1390;
+    const OFFICE_LNG = 101.6869;
+    const ALLOWED_RADIUS_KM = 2.0;
+    
+    // Working hours
+    const WORK_START_HOUR = 8;
+    const WORK_START_MINUTE = 15;
+    
+    // Helper Functions
+    function calculateHours(checkIn, checkOut, lunchDuration = 0) {
+        if (!checkIn || !checkOut) return 0;
+        const inTime = new Date(checkIn);
+        const outTime = new Date(checkOut);
+        const diffMs = outTime - inTime;
+        const hours = Math.max(0, diffMs / (1000 * 3600));
+        return Math.max(0, hours - lunchDuration);
+    }
+    
+    function formatTime(dateString) {
+        if (!dateString) return '--:--:--';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-MY', { hour12: false });
+    }
+    
+    function formatDateTime(dateString) {
+        if (!dateString) return '--:--:--';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-MY', { 
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false 
+        });
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-MY', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+    }
+    
+    function formatShortDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-MY', { month: 'short', day: 'numeric' });
+    }
+    
+    function isLate(checkInTimeStr) {
+        if (!checkInTimeStr) return false;
+        const checkInDate = new Date(checkInTimeStr);
+        const checkInMinutes = checkInDate.getHours() * 60 + checkInDate.getMinutes();
+        const workStartMinutes = WORK_START_HOUR * 60 + WORK_START_MINUTE;
+        return checkInMinutes > workStartMinutes;
+    }
+    
+    function getTodayStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+    
+    function validateGPS(lat, lng) {
+        const R = 6371;
+        const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
+        const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(OFFICE_LAT * Math.PI/180) * Math.cos(lat * Math.PI/180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        return { valid: distance <= ALLOWED_RADIUS_KM, distance: distance };
+    }
+    
+    function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+            if(!navigator.geolocation) reject(new Error("Geolocation not supported"));
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+                enableHighAccuracy: true, timeout: 10000 
+            });
+        });
+    }
+    
+    // Global State
+    let employees = [];
+    let attendanceRecords = [];
+    let lunchBreaks = [];
+    let editHistory = [];
+    
+    function loadData() {
+        const storedEmps = localStorage.getItem(STORAGE_EMPLOYEES);
+        if(storedEmps) {
+            employees = JSON.parse(storedEmps);
+        } else {
+            employees = [
+                { id: "emp1", name: "Ahmad bin Ali", position: "Farm Supervisor", createdAt: new Date().toISOString() },
+                { id: "emp2", name: "Siti Aishah", position: "Harvesting Manager", createdAt: new Date().toISOString() },
+                { id: "emp3", name: "Mohammad Faiz", position: "Field Worker", createdAt: new Date().toISOString() }
+            ];
+            saveEmployees();
+        }
+        
+        const storedAtt = localStorage.getItem(STORAGE_ATTENDANCE);
+        if(storedAtt) {
+            attendanceRecords = JSON.parse(storedAtt);
+        } else {
+            attendanceRecords = [];
+        }
+        
+        const storedLunch = localStorage.getItem(STORAGE_LUNCH_BREAKS);
+        if(storedLunch) {
+            lunchBreaks = JSON.parse(storedLunch);
+        } else {
+            lunchBreaks = [];
+        }
+        
+        const storedHistory = localStorage.getItem(STORAGE_EDIT_HISTORY);
+        if(storedHistory) {
+            editHistory = JSON.parse(storedHistory);
+        } else {
+            editHistory = [];
+        }
+        
+        let users = localStorage.getItem(STORAGE_USERS);
+        if(!users) {
+            const defaultUsers = {
+                "admin": { id: "admin1", name: "Farm Manager", password: "admin123", role: "admin" },
+                "ahmad": { id: "emp1", name: "Ahmad bin Ali", password: "emp123", role: "employee", employeeId: "emp1" },
+                "siti": { id: "emp2", name: "Siti Aishah", password: "emp123", role: "employee", employeeId: "emp2" },
+                "faiz": { id: "emp3", name: "Mohammad Faiz", password: "emp123", role: "employee", employeeId: "emp3" }
+            };
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(defaultUsers));
+        }
+    }
+    
+    function saveEmployees() { localStorage.setItem(STORAGE_EMPLOYEES, JSON.stringify(employees)); }
+    function saveAttendance() { localStorage.setItem(STORAGE_ATTENDANCE, JSON.stringify(attendanceRecords)); }
+    function saveLunchBreaks() { localStorage.setItem(STORAGE_LUNCH_BREAKS, JSON.stringify(lunchBreaks)); }
+    function saveEditHistory() { localStorage.setItem(STORAGE_EDIT_HISTORY, JSON.stringify(editHistory)); }
+    
+    function getTodayAttendance(employeeId) {
+        const today = getTodayStr();
+        return attendanceRecords.find(rec => rec.employeeId === employeeId && rec.date === today);
+    }
+    
+    function getTodayLunchBreak(employeeId) {
+        const today = getTodayStr();
+        return lunchBreaks.find(lb => lb.employeeId === employeeId && lb.date === today);
+    }
+    
+    function addEditHistory(employeeId, field, oldValue, newValue, editedBy) {
+        editHistory.unshift({
+            id: Date.now().toString(),
+            employeeId, field, oldValue, newValue, editedBy,
+            editedAt: new Date().toISOString()
+        });
+        if (editHistory.length > 100) editHistory.pop();
+        saveEditHistory();
+    }
+    
+    // Admin Time Editing
+    function updateCheckInTime(recordId, newCheckInTime, editedBy, callback) {
+        const record = attendanceRecords.find(r => r.id === recordId);
+        if (!record) return false;
+        
+        const oldCheckIn = record.checkInTime;
+        record.checkInTime = newCheckInTime;
+        record.isLate = isLate(newCheckInTime);
+        record.manuallyEdited = true;
+        record.lastEditedBy = editedBy;
+        record.lastEditedAt = new Date().toISOString();
+        
+        if (record.checkOutTime) {
+            const lunchRecord = lunchBreaks.find(lb => lb.employeeId === record.employeeId && lb.date === record.date);
+            const lunchDuration = lunchRecord && lunchRecord.lunchDuration ? lunchRecord.lunchDuration / 60 : 0;
+            record.hoursWorked = calculateHours(record.checkInTime, record.checkOutTime, lunchDuration);
+        }
+        
+        saveAttendance();
+        addEditHistory(record.employeeId, 'check_in_time', formatDateTime(oldCheckIn), formatDateTime(newCheckInTime), editedBy);
+        if (callback) callback();
+        return true;
+    }
+    
+    function updateCheckOutTime(recordId, newCheckOutTime, editedBy, callback) {
+        const record = attendanceRecords.find(r => r.id === recordId);
+        if (!record) return false;
+        
+        const oldCheckOut = record.checkOutTime;
+        record.checkOutTime = newCheckOutTime;
+        record.manuallyEdited = true;
+        record.lastEditedBy = editedBy;
+        record.lastEditedAt = new Date().toISOString();
+        
+        const lunchRecord = lunchBreaks.find(lb => lb.employeeId === record.employeeId && lb.date === record.date);
+        const lunchDuration = lunchRecord && lunchRecord.lunchDuration ? lunchRecord.lunchDuration / 60 : 0;
+        record.hoursWorked = calculateHours(record.checkInTime, record.checkOutTime, lunchDuration);
+        
+        saveAttendance();
+        addEditHistory(record.employeeId, 'check_out_time', formatDateTime(oldCheckOut || 'Not checked out'), formatDateTime(newCheckOutTime), editedBy);
+        if (callback) callback();
+        return true;
+    }
+    
+    // Attendance Actions
+    async function performCheckIn(employeeId, refreshCallback) {
+        const now = new Date();
+        const today = getTodayStr();
+        const existing = getTodayAttendance(employeeId);
+        
+        if(existing && existing.checkInTime) {
+            alert(`⚠️ Already checked in today at ${formatTime(existing.checkInTime)}!`);
+            return false;
+        }
+        
+        let lat = null, lng = null;
+        let gpsValid = false;
+        let distance = 0;
+        
+        try {
+            const pos = await getCurrentPosition();
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+            const validation = validateGPS(lat, lng);
+            gpsValid = validation.valid;
+            distance = validation.distance;
+            alert(gpsValid ? `✅ GPS verified: Within farm (${distance.toFixed(2)}km)` : `⚠️ Warning: ${distance.toFixed(2)}km from farm!`);
+        } catch(e) {
+            alert("⚠️ Could not get GPS location.");
+        }
+        
+        const checkInMinutes = now.getHours() * 60 + now.getMinutes();
+        const workStartMinutes = WORK_START_HOUR * 60 + WORK_START_MINUTE;
+        const lateStatus = checkInMinutes > workStartMinutes;
+        
+        if(lateStatus) {
+            const lateMinutes = checkInMinutes - workStartMinutes;
+            alert(`⚠️ You are ${lateMinutes} minutes late! Start time is ${WORK_START_HOUR}:${WORK_START_MINUTE.toString().padStart(2, '0')}`);
+        }
+        
+        const newRecord = {
+            id: Date.now().toString(),
+            employeeId: employeeId,
+            date: today,
+            checkInTime: now.toISOString(),
+            checkOutTime: null,
+            latitude: lat, longitude: lng,
+            gpsValid: gpsValid, distance: distance,
+            isLate: lateStatus
+        };
+        
+        attendanceRecords.push(newRecord);
+        saveAttendance();
+        alert(`✅ Check-in successful at ${formatTime(now.toISOString())}`);
+        if(refreshCallback) refreshCallback();
+        return true;
+    }
+    
+    async function startLunchBreak(employeeId, refreshCallback) {
+        const now = new Date();
+        const today = getTodayStr();
+        const existing = getTodayAttendance(employeeId);
+        
+        if(!existing || !existing.checkInTime) return alert("❌ Must check in first!");
+        if(existing.checkOutTime) return alert("⚠️ Already checked out!");
+        
+        const existingLunch = getTodayLunchBreak(employeeId);
+        if(existingLunch && existingLunch.lunchStart) return alert(`⚠️ Lunch started at ${formatTime(existingLunch.lunchStart)}!`);
+        
+        lunchBreaks.push({
+            id: Date.now().toString(),
+            employeeId: employeeId, date: today,
+            lunchStart: now.toISOString(), lunchEnd: null
+        });
+        saveLunchBreaks();
+        alert(`✅ Lunch started at ${formatTime(now.toISOString())}`);
+        if(refreshCallback) refreshCallback();
+        return true;
+    }
+    
+    async function endLunchBreak(employeeId, refreshCallback) {
+        const now = new Date();
+        const today = getTodayStr();
+        const lunchRecord = getTodayLunchBreak(employeeId);
+        
+        if(!lunchRecord || !lunchRecord.lunchStart) return alert("❌ No active lunch break!");
+        if(lunchRecord.lunchEnd) return alert(`⚠️ Lunch ended at ${formatTime(lunchRecord.lunchEnd)}!`);
+        
+        const lunchDurationMinutes = (now - new Date(lunchRecord.lunchStart)) / (1000 * 60);
+        lunchRecord.lunchEnd = now.toISOString();
+        lunchRecord.lunchDuration = lunchDurationMinutes;
+        saveLunchBreaks();
+        
+        alert(`✅ Lunch ended at ${formatTime(now.toISOString())}\nDuration: ${lunchDurationMinutes.toFixed(0)} min`);
+        if(refreshCallback) refreshCallback();
+        return true;
+    }
+    
+    async function performCheckOut(employeeId, refreshCallback) {
+        const now = new Date();
+        const today = getTodayStr();
+        const record = getTodayAttendance(employeeId);
+        
+        if(!record || !record.checkInTime) return alert("❌ No check-in found!");
+        if(record.checkOutTime) return alert(`⚠️ Already checked out at ${formatTime(record.checkOutTime)}!`);
+        
+        const lunchRecord = getTodayLunchBreak(employeeId);
+        if(lunchRecord && !lunchRecord.lunchEnd) {
+            lunchRecord.lunchEnd = now.toISOString();
+            lunchRecord.lunchDuration = (new Date() - new Date(lunchRecord.lunchStart)) / (1000 * 60);
+            saveLunchBreaks();
+        }
+        
+        const lunchDurationHours = lunchRecord && lunchRecord.lunchDuration ? lunchRecord.lunchDuration / 60 : 0;
+        record.checkOutTime = now.toISOString();
+        record.hoursWorked = calculateHours(record.checkInTime, record.checkOutTime, lunchDurationHours);
+        record.lunchDuration = lunchDurationHours;
+        saveAttendance();
+        
+        alert(`✅ Checked out at ${formatTime(now.toISOString())}\nHours: ${record.hoursWorked.toFixed(2)}h`);
+        if(refreshCallback) refreshCallback();
+    }
+    
+    // Employee Management
+    function addEmployee(name, position, refreshCallback) {
+        if(!name.trim()) return alert("Enter employee name");
+        const newEmp = { id: "emp_" + Date.now(), name: name.trim(), position: position || "Field Worker", createdAt: new Date().toISOString() };
+        employees.push(newEmp);
+        saveEmployees();
+        
+        const users = JSON.parse(localStorage.getItem(STORAGE_USERS));
+        const username = name.trim().toLowerCase().replace(/\s/g, '') + Math.floor(Math.random() * 1000);
+        users[username] = { id: newEmp.id, name: name.trim(), password: "123456", role: "employee", employeeId: newEmp.id };
+        localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        
+        alert(`✅ Employee added!\nUsername: ${username}\nPassword: 123456`);
+        if(refreshCallback) refreshCallback();
+        return true;
+    }
+    
+    function updateEmployeePosition(empId, newPosition, refreshCallback) {
+        const emp = employees.find(e => e.id === empId);
+        if(emp) { emp.position = newPosition; saveEmployees(); if(refreshCallback) refreshCallback(); return true; }
+        return false;
+    }
+    
+    function updateUserCredentials(username, newUsername, newPassword, refreshCallback) {
+        const users = JSON.parse(localStorage.getItem(STORAGE_USERS));
+        if (!users[username]) return alert("User not found!");
+        if (newUsername !== username && users[newUsername]) return alert("Username exists!");
+        
+        const userData = users[username];
+        delete users[username];
+        users[newUsername] = { ...userData, password: newPassword || userData.password };
+        localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        alert(`✅ Credentials updated!`);
+        if(refreshCallback) refreshCallback();
+        return true;
+    }
+    
+    function deleteUser(username, refreshCallback) {
+        if (username === 'admin') return alert("Cannot delete admin!");
+        if (confirm(`Delete "${username}"?`)) {
+            const users = JSON.parse(localStorage.getItem(STORAGE_USERS));
+            const userData = users[username];
+            if (userData && userData.employeeId) {
+                employees = employees.filter(e => e.id !== userData.employeeId);
+                attendanceRecords = attendanceRecords.filter(a => a.employeeId !== userData.employeeId);
+                lunchBreaks = lunchBreaks.filter(lb => lb.employeeId !== userData.employeeId);
+                saveEmployees(); saveAttendance(); saveLunchBreaks();
+            }
+            delete users[username];
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+            alert("✅ Deleted!");
+            if(refreshCallback) refreshCallback();
+            return true;
+        }
+        return false;
+    }
+    
+    function editEmployee(empId, newName, refreshCallback) {
+        const emp = employees.find(e => e.id === empId);
+        if(emp) { emp.name = newName; saveEmployees(); if(refreshCallback) refreshCallback(); return true; }
+        return false;
+    }
+    
+    function deleteEmployee(empId, refreshCallback) {
+        if(confirm("Delete employee and ALL records?")) {
+            const users = JSON.parse(localStorage.getItem(STORAGE_USERS));
+            for(let key in users) if(users[key].employeeId === empId) delete users[key];
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+            employees = employees.filter(e => e.id !== empId);
+            attendanceRecords = attendanceRecords.filter(a => a.employeeId !== empId);
+            lunchBreaks = lunchBreaks.filter(lb => lb.employeeId !== empId);
+            saveEmployees(); saveAttendance(); saveLunchBreaks();
+            alert("✅ Deleted!");
+            if(refreshCallback) refreshCallback();
+            return true;
+        }
+        return false;
+    }
+    
+    function getEmployeeAttendanceHistory(employeeId) {
+        return attendanceRecords.filter(rec => rec.employeeId === employeeId).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    
+    function getMonthlyReport() {
+        const now = new Date();
+        const month = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const report = employees.map(emp => {
+            let totalHours = 0, lateDays = 0, totalDaysPresent = 0, totalLunchMinutes = 0;
+            const empRecords = attendanceRecords.filter(rec => rec.employeeId === emp.id && rec.checkInTime);
+            empRecords.forEach(rec => {
+                const recDate = new Date(rec.date);
+                if(recDate.getMonth() === now.getMonth() && recDate.getFullYear() === now.getFullYear()) {
+                    totalDaysPresent++;
+                    if(rec.checkOutTime) totalHours += rec.hoursWorked || calculateHours(rec.checkInTime, rec.checkOutTime, rec.lunchDuration || 0);
+                    if(isLate(rec.checkInTime)) lateDays++;
+                    const lunch = lunchBreaks.find(lb => lb.employeeId === emp.id && lb.date === rec.date);
+                    if(lunch && lunch.lunchDuration) totalLunchMinutes += lunch.lunchDuration;
+                }
+            });
+            return { name: emp.name, position: emp.position || "Field Worker", daysPresent: totalDaysPresent, hours: totalHours.toFixed(2), lateDays: lateDays, avgLunch: (totalLunchMinutes / (totalDaysPresent || 1)).toFixed(0) };
+        });
+        return { month, report };
+    }
+    
+    // React Components
+    const { useState, useEffect, useRef } = React;
+    
+    function LoginScreen({ onLogin }) {
+        const [username, setUsername] = useState("");
+        const [password, setPassword] = useState("");
+        const [error, setError] = useState("");
+        
+        const handleLogin = () => {
+            const users = JSON.parse(localStorage.getItem(STORAGE_USERS));
+            const userData = users[username];
+            if(userData && userData.password === password) {
+                setError("");
+                onLogin({ ...userData, username });
+            } else {
+                setError("Invalid username or password");
+            }
+        };
+        
+        return React.createElement("div", { className: "login-wrapper" },
+            React.createElement("div", { className: "login-card" },
+                React.createElement("div", { className: "logo" },
+                    React.createElement("i", { className: "fas fa-leaf" }),
+                    React.createElement("h2", null, "EZ Farming Sdn Bhd"),
+                    React.createElement("p", null, "Attendance Management System")
+                ),
+                error && React.createElement("div", { className: "error-message" }, error),
+                React.createElement("div", { className: "input-group" },
+                    React.createElement("i", { className: "fas fa-user" }),
+                    React.createElement("input", { type: "text", placeholder: "Username", value: username, onChange: e => setUsername(e.target.value), onKeyPress: e => e.key === 'Enter' && handleLogin() })
+                ),
+                React.createElement("div", { className: "input-group" },
+                    React.createElement("i", { className: "fas fa-lock" }),
+                    React.createElement("input", { type: "password", placeholder: "Password", value: password, onChange: e => setPassword(e.target.value), onKeyPress: e => e.key === 'Enter' && handleLogin() })
+                ),
+                React.createElement("button", { className: "login-btn", onClick: handleLogin }, React.createElement("i", { className: "fas fa-sign-in-alt" }), " Login")
+            )
+        );
+    }
+    
+    function TimeEditModal({ record, employee, onClose, onUpdate, currentUser }) {
+        const [checkInTime, setCheckInTime] = useState("");
+        const [checkOutTime, setCheckOutTime] = useState("");
+        
+        useEffect(() => {
+            if (record) {
+                if (record.checkInTime) setCheckInTime(new Date(record.checkInTime).toISOString().slice(0, 16));
+                if (record.checkOutTime) setCheckOutTime(new Date(record.checkOutTime).toISOString().slice(0, 16));
+            }
+        }, [record]);
+        
+        const handleUpdate = () => {
+            if (checkInTime && checkInTime !== new Date(record.checkInTime).toISOString().slice(0, 16)) {
+                updateCheckInTime(record.id, new Date(checkInTime).toISOString(), currentUser.name, onUpdate);
+            }
+            if (checkOutTime && checkOutTime !== (record.checkOutTime ? new Date(record.checkOutTime).toISOString().slice(0, 16) : "")) {
+                updateCheckOutTime(record.id, new Date(checkOutTime).toISOString(), currentUser.name, onUpdate);
+            }
+            onClose();
+        };
+        
+        return React.createElement("div", { className: "modal", style: { display: "flex" }, onClick: (e) => { if(e.target.className === "modal") onClose(); } },
+            React.createElement("div", { className: "modal-content" },
+                React.createElement("h3", null, React.createElement("i", { className: "fas fa-clock" }), " Edit Attendance - ", employee?.name),
+                React.createElement("div", { className: "form-group" },
+                    React.createElement("label", null, "Check In Time"),
+                    React.createElement("input", { type: "datetime-local", value: checkInTime, onChange: e => setCheckInTime(e.target.value) })
+                ),
+                React.createElement("div", { className: "form-group" },
+                    React.createElement("label", null, "Check Out Time"),
+                    React.createElement("input", { type: "datetime-local", value: checkOutTime, onChange: e => setCheckOutTime(e.target.value) })
+                ),
+                React.createElement("div", { style: { display: "flex", gap: "10px", marginTop: "20px" } },
+                    React.createElement("button", { onClick: handleUpdate }, React.createElement("i", { className: "fas fa-save" }), " Save"),
+                    React.createElement("button", { onClick: onClose, style: { background: "#999" } }, " Cancel")
+                )
+            )
+        );
+    }
+    
+    function AttendanceHistory({ employee, onClose, currentUser }) {
+        const [selectedRecord, setSelectedRecord] = useState(null);
+        const history = getEmployeeAttendanceHistory(employee?.id);
+        
+        return React.createElement("div", null,
+            selectedRecord && React.createElement(TimeEditModal, {
+                record: selectedRecord, employee: employee,
+                onClose: () => setSelectedRecord(null), onUpdate: () => {},
+                currentUser: currentUser
+            }),
+            React.createElement("div", { className: "calendar-header" },
+                React.createElement("h3", null, React.createElement("i", { className: "fas fa-history" }), " History - ", employee?.name),
+                React.createElement("button", { onClick: onClose, style: { background: "#999" } }, React.createElement("i", { className: "fas fa-times" }), " Close")
+            ),
+            React.createElement("div", { className: "history-list" },
+                history.length === 0 ? 
+                    React.createElement("p", { style: { textAlign: "center", padding: "20px", color: "#666" } }, "No records found") :
+                    history.map(rec => {
+                        const isLateRecord = isLate(rec.checkInTime);
+                        return React.createElement("div", { key: rec.id, className: "history-item", onClick: () => setSelectedRecord(rec) },
+                            React.createElement("div", { className: "history-date" }, formatDate(rec.date)),
+                            React.createElement("div", { className: "history-time" },
+                                React.createElement("i", { className: "fas fa-sign-in-alt" }), " In: ", formatTime(rec.checkInTime),
+                                rec.checkOutTime && React.createElement(React.Fragment, null, " | ", React.createElement("i", { className: "fas fa-sign-out-alt" }), " Out: ", formatTime(rec.checkOutTime))
+                            ),
+                            React.createElement("div", { className: `history-status ${isLateRecord ? 'history-status-late' : 'history-status-ontime'}` },
+                                isLateRecord ? "⚠️ Late" : "✅ On Time"
+                            ),
+                            rec.manuallyEdited && React.createElement("div", { style: { fontSize: "0.7rem", color: "#9c27b0", marginTop: "4px" } },
+                                React.createElement("i", { className: "fas fa-edit" }), " Edited by ", rec.lastEditedBy
+                            )
+                        );
+                    })
+            ),
+            React.createElement("div", { style: { marginTop: "16px", textAlign: "center", fontSize: "0.8rem", color: "#666" } },
+                React.createElement("i", { className: "fas fa-info-circle" }), " Click any record to edit times"
+            )
+        );
+    }
+    
+    function UserManagement({ refreshTrigger, currentUser }) {
+        const [users, setUsers] = useState({});
+        const [editingUser, setEditingUser] = useState(null);
+        const [newUsername, setNewUsername] = useState("");
+        const [newPassword, setNewPassword] = useState("");
+        
+        useEffect(() => {
+            setUsers(JSON.parse(localStorage.getItem(STORAGE_USERS)) || {});
+        }, [refreshTrigger]);
+        
+        const userList = Object.entries(users).filter(([u]) => u !== 'admin');
+        
+        return React.createElement("div", null,
+            editingUser && React.createElement("div", { className: "modal", style: { display: "flex" }, onClick: (e) => { if(e.target.className === "modal") setEditingUser(null); } },
+                React.createElement("div", { className: "modal-content" },
+                    React.createElement("h3", null, "Edit User"),
+                    React.createElement("div", { className: "form-group" },
+                        React.createElement("label", null, "Username"),
+                        React.createElement("input", { type: "text", value: newUsername, onChange: e => setNewUsername(e.target.value) })
+                    ),
+                    React.createElement("div", { className: "form-group" },
+                        React.createElement("label", null, "New Password"),
+                        React.createElement("input", { type: "password", value: newPassword, onChange: e => setNewPassword(e.target.value), placeholder: "Leave blank to keep" })
+                    ),
+                    React.createElement("div", { style: { display: "flex", gap: "10px", marginTop: "20px" } },
+                        React.createElement("button", { onClick: () => { updateUserCredentials(editingUser.username, newUsername, newPassword, () => { setEditingUser(null); }); } }, " Update"),
+                        React.createElement("button", { onClick: () => setEditingUser(null), style: { background: "#999" } }, " Cancel")
+                    )
+                )
+            ),
+            React.createElement("div", { className: "users-list" },
+                userList.map(([username, userData]) => 
+                    React.createElement("div", { key: username, className: "user-item" },
+                        React.createElement("div", { className: "user-info" },
+                            React.createElement("div", { className: "user-username" }, username),
+                            React.createElement("div", { className: "user-name" }, userData.name, " (", userData.role, ")")
+                        ),
+                        React.createElement("div", { style: { display: "flex", gap: "8px" } },
+                            React.createElement("button", { className: "btn-small btn-primary", onClick: () => { setEditingUser({ username, ...userData }); setNewUsername(username); setNewPassword(""); } }, " Edit"),
+                            React.createElement("button", { className: "btn-small btn-danger", onClick: () => deleteUser(username, () => {}) }, " Delete")
+                        )
+                    )
+                ),
+                userList.length === 0 && React.createElement("p", { style: { textAlign: "center", padding: "20px" } }, "No employees")
+            )
+        );
+    }
+    
+    function AttendanceCalendar({ employee, refreshTrigger, onClose }) {
+        const calendarRef = useRef(null);
+        const [summary, setSummary] = useState({ totalDays: 0, totalHours: 0, lateDays: 0, onTimeDays: 0 });
+        
+        useEffect(() => {
+            if (!employee || !calendarRef.current) return;
+            
+            const empRecords = attendanceRecords.filter(rec => rec.employeeId === employee.id && rec.checkInTime);
+            let totalHours = 0, lateDays = 0, onTimeDays = 0;
+            empRecords.forEach(rec => {
+                if (rec.checkOutTime) totalHours += rec.hoursWorked || calculateHours(rec.checkInTime, rec.checkOutTime, rec.lunchDuration || 0);
+                if (isLate(rec.checkInTime)) lateDays++; else onTimeDays++;
+            });
+            setSummary({ totalDays: empRecords.length, totalHours: totalHours.toFixed(2), lateDays, onTimeDays });
+            
+            const calendarEl = calendarRef.current;
+            if (calendarEl._calendar) calendarEl._calendar.destroy();
+            
+            const events = empRecords.map(rec => ({
+                title: rec.checkOutTime ? `✅ ${(rec.hoursWorked || 0).toFixed(1)}h` : '🟢 Working',
+                start: new Date(rec.checkInTime),
+                end: rec.checkOutTime ? new Date(rec.checkOutTime) : new Date(),
+                backgroundColor: rec.checkOutTime ? (isLate(rec.checkInTime) ? '#ff9800' : '#4caf50') : '#2196f3',
+                extendedProps: { checkIn: formatTime(rec.checkInTime), checkOut: rec.checkOutTime ? formatTime(rec.checkOutTime) : 'Not out', hours: (rec.hoursWorked || 0).toFixed(2), late: isLate(rec.checkInTime) }
+            }));
+            
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+                events: events,
+                eventClick: function(info) {
+                    const p = info.event.extendedProps;
+                    alert(`📅 ${info.event.start.toLocaleDateString()}\nIn: ${p.checkIn}\nOut: ${p.checkOut}\nHours: ${p.hours}\n${p.late ? '⚠️ Late' : '✅ On Time'}`);
+                },
+                height: 'auto'
+            });
+            calendar.render();
+            calendarEl._calendar = calendar;
+        }, [refreshTrigger, employee]);
+        
+        return React.createElement("div", null,
+            React.createElement("div", { className: "calendar-header" },
+                React.createElement("h3", null, "Calendar - ", employee?.name),
+                React.createElement("button", { onClick: onClose, style: { background: "#999" } }, " Close")
+            ),
+            React.createElement("div", { className: "calendar-summary" },
+                React.createElement("div", { className: "summary-card" }, React.createElement("div", { className: "summary-number" }, summary.totalDays), React.createElement("div", { className: "summary-label" }, "Days Present")),
+                React.createElement("div", { className: "summary-card", style: { background: "linear-gradient(135deg, #ff9800, #f57c00)" } }, React.createElement("div", { className: "summary-number" }, summary.totalHours), React.createElement("div", { className: "summary-label" }, "Hours")),
+                React.createElement("div", { className: "summary-card", style: { background: "linear-gradient(135deg, #4caf50, #2e7d32)" } }, React.createElement("div", { className: "summary-number" }, summary.onTimeDays), React.createElement("div", { className: "summary-label" }, "On Time")),
+                React.createElement("div", { className: "summary-card", style: { background: "linear-gradient(135deg, #f44336, #d32f2f)" } }, React.createElement("div", { className: "summary-number" }, summary.lateDays), React.createElement("div", { className: "summary-label" }, "Late"))
+            ),
+            React.createElement("div", { ref: calendarRef })
+        );
+    }
+    
+    function RealTimeDateTime() {
+        const [currentTime, setCurrentTime] = useState(new Date());
+        useEffect(() => { const timer = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(timer); }, []);
+        return React.createElement("div", { className: "datetime-section" },
+            React.createElement("div", { className: "current-date" }, formatDate(currentTime)),
+            React.createElement("div", { className: "current-time" }, currentTime.toLocaleTimeString('en-MY', { hour12: false })),
+            React.createElement("div", { style: { fontSize: "14px", marginTop: "8px", opacity: 0.8 } }, "Start: 8:15 AM | Lunch: 1:00-2:00 PM")
+        );
+    }
+    
+    function MainApp({ user, onLogout }) {
+        const [empList, setEmpList] = useState([]);
+        const [newEmpName, setNewEmpName] = useState("");
+        const [newEmpPosition, setNewEmpPosition] = useState("Field Worker");
+        const [editingId, setEditingId] = useState(null);
+        const [editName, setEditName] = useState("");
+        const [editingPosition, setEditingPosition] = useState(null);
+        const [editPosition, setEditPosition] = useState("");
+        const [showReport, setShowReport] = useState(false);
+        const [showUserManagement, setShowUserManagement] = useState(false);
+        const [showCalendar, setShowCalendar] = useState(false);
+        const [showHistory, setShowHistory] = useState(false);
+        const [selectedEmployee, setSelectedEmployee] = useState(null);
+        const [reportData, setReportData] = useState(null);
+        const [refreshTrigger, setRefreshTrigger] = useState(0);
+        
+        const refreshData = () => { loadData(); setEmpList([...employees]); setRefreshTrigger(prev => prev + 1); };
+        
+        useEffect(() => { loadData(); setEmpList([...employees]); }, []);
+        useEffect(() => { if(showReport) setReportData(getMonthlyReport()); }, [refreshTrigger, showReport]);
+        
+        const isAdmin = user?.role === "admin";
+        const displayedEmployees = isAdmin ? empList : empList.filter(e => e.id === user?.employeeId);
+        
+        const overallStats = React.useMemo(() => {
+            if(!isAdmin) return null;
+            const today = getTodayStr();
+            return {
+                totalEmployees: employees.length,
+                currentlyWorking: attendanceRecords.filter(r => r.date === today && r.checkInTime && !r.checkOutTime).length,
+                onLunchBreak: lunchBreaks.filter(lb => lb.date === today && lb.lunchStart && !lb.lunchEnd).length,
+                totalCheckInsToday: attendanceRecords.filter(r => r.date === today && r.checkInTime).length,
+                lateToday: attendanceRecords.filter(r => r.date === today && r.isLate).length,
+                totalHoursToday: attendanceRecords.filter(r => r.date === today && r.checkOutTime).reduce((s, r) => s + (r.hoursWorked || 0), 0).toFixed(2)
+            };
+        }, [refreshTrigger]);
+        
+        const renderEmployeeCard = (emp) => {
+            const todayAtt = getTodayAttendance(emp.id);
+            const todayLunch = getTodayLunchBreak(emp.id);
+            const isCheckedIn = todayAtt && todayAtt.checkInTime && !todayAtt.checkOutTime;
+            const isOnLunch = todayLunch && todayLunch.lunchStart && !todayLunch.lunchEnd;
+            const isLateToday = todayAtt?.isLate;
+            
+            let statusClass = "status-checked-out", statusText = "⚪ NOT CHECKED IN";
+            if(isCheckedIn && !isOnLunch) { statusClass = "status-checked-in"; statusText = "✅ CHECKED IN"; }
+            else if(isOnLunch) { statusClass = "status-on-lunch"; statusText = "🍽️ ON LUNCH"; }
+            if(isLateToday && !todayAtt?.checkOutTime) { statusClass = "status-late"; statusText = "⚠️ LATE ARRIVAL"; }
+            
+            return React.createElement("div", { key: emp.id, className: "employee-card" },
+                React.createElement("div", { className: "employee-name" },
+                    React.createElement("div", null,
+                        editingId === emp.id ? 
+                            React.createElement("input", { value: editName, onChange: e => setEditName(e.target.value), onBlur: () => { editEmployee(emp.id, editName, refreshData); setEditingId(null); }, onKeyPress: e => e.key === 'Enter' && editEmployee(emp.id, editName, refreshData) && setEditingId(null), autoFocus: true }) : 
+                            React.createElement("span", null, emp.name),
+                        React.createElement("div", { style: { fontSize: "0.8rem", color: "#666", marginTop: "4px" } },
+                            editingPosition === emp.id ?
+                                React.createElement("input", { value: editPosition, onChange: e => setEditPosition(e.target.value), onBlur: () => { updateEmployeePosition(emp.id, editPosition, refreshData); setEditingPosition(null); }, style: { width: "120px", fontSize: "0.75rem" }, autoFocus: true }) :
+                                React.createElement("span", null, React.createElement("i", { className: "fas fa-briefcase" }), " ", emp.position || "Field Worker")
+                        )
+                    ),
+                    isAdmin && React.createElement("div", null,
+                        editingId !== emp.id && React.createElement("i", { className: "fas fa-edit", style: { cursor: "pointer", marginRight: "8px", color: "#2e7d32" }, onClick: () => { setEditingId(emp.id); setEditName(emp.name); } }),
+                        editingPosition !== emp.id && React.createElement("i", { className: "fas fa-user-tag", style: { cursor: "pointer", color: "#1976d2" }, onClick: () => { setEditingPosition(emp.id); setEditPosition(emp.position || "Field Worker"); } })
+                    )
+                ),
+                React.createElement("div", null, React.createElement("span", { className: `status ${statusClass}` }, statusText)),
+                todayAtt && React.createElement("div", { className: `time-info ${isOnLunch ? 'lunch-info' : ''}` },
+                    React.createElement("div", null, React.createElement("i", { className: "fas fa-sign-in-alt" }), " In: ", formatTime(todayAtt.checkInTime)),
+                    todayAtt.checkOutTime && React.createElement("div", null, React.createElement("i", { className: "fas fa-sign-out-alt" }), " Out: ", formatTime(todayAtt.checkOutTime)),
+                    todayLunch && todayLunch.lunchStart && React.createElement("div", null, 
+                        React.createElement("i", { className: "fas fa-utensils" }), " Lunch: ", formatTime(todayLunch.lunchStart),
+                        todayLunch.lunchEnd && ` - ${formatTime(todayLunch.lunchEnd)}`
+                    ),
+                    todayAtt.checkOutTime && React.createElement("div", null, React.createElement("i", { className: "fas fa-clock" }), " Hours: ", (todayAtt.hoursWorked || 0).toFixed(2))
+                ),
+                React.createElement("div", { className: "action-buttons" },
+                    !todayAtt?.checkInTime && React.createElement("button", { className: "btn-small", onClick: () => performCheckIn(emp.id, refreshData) }, React.createElement("i", { className: "fas fa-fingerprint" }), " Check In"),
+                    isCheckedIn && !isOnLunch && !todayAtt?.checkOutTime && React.createElement("button", { className: "btn-small btn-lunch", onClick: () => startLunchBreak(emp.id, refreshData) }, React.createElement("i", { className: "fas fa-utensils" }), " Lunch"),
+                    isOnLunch && React.createElement("button", { className: "btn-small btn-warning", onClick: () => endLunchBreak(emp.id, refreshData) }, React.createElement("i", { className: "fas fa-utensil-spoon" }), " End Lunch"),
+                    isCheckedIn && !todayAtt?.checkOutTime && React.createElement("button", { className: "btn-small", onClick: () => performCheckOut(emp.id, refreshData) }, React.createElement("i", { className: "fas fa-sign-out-alt" }), " Check Out"),
+                    React.createElement("button", { className: "btn-small btn-info", onClick: () => { setSelectedEmployee(emp); setShowCalendar(true); } }, React.createElement("i", { className: "fas fa-calendar-alt" }), " Calendar"),
+                    isAdmin && React.createElement("button", { className: "btn-small btn-edit-time", onClick: () => { setSelectedEmployee(emp); setShowHistory(true); } }, React.createElement("i", { className: "fas fa-history" }), " History"),
+                    isAdmin && React.createElement("button", { className: "btn-small btn-danger", onClick: () => deleteEmployee(emp.id, refreshData) }, React.createElement("i", { className: "fas fa-trash" }), " Delete")
+                )
+            );
+        };
+        
+        return React.createElement("div", { className: "container" },
+            React.createElement(RealTimeDateTime, null),
+            React.createElement("div", { className: "card" },
+                React.createElement("div", { className: "header" },
+                    React.createElement("div", null,
+                        React.createElement("h1", null, React.createElement("i", { className: "fas fa-tractor" }), " EZ Farming"),
+                        React.createElement("div", { className: "badge" }, user.name, " (", user.role === "admin" ? "Admin" : "Employee", ")")
+                    ),
+                    React.createElement("div", null,
+                        React.createElement("button", { onClick: () => { setShowReport(!showReport); if(!showReport) setReportData(getMonthlyReport()); } }, React.createElement("i", { className: "fas fa-chart-line" }), " Report"),
+                        isAdmin && React.createElement("button", { style: { marginLeft: "12px", background: "#1976d2" }, onClick: () => setShowUserManagement(!showUserManagement) }, React.createElement("i", { className: "fas fa-users-cog" }), " Users"),
+                        React.createElement("button", { style: { marginLeft: "12px", background: "#5d4037" }, onClick: onLogout }, React.createElement("i", { className: "fas fa-sign-out-alt" }), " Logout")
+                    )
+                ),
+                isAdmin && overallStats && React.createElement("div", { className: "stats-grid" },
+                    React.createElement("div", { className: "stat-card" }, React.createElement("div", { className: "stat-number" }, overallStats.totalEmployees), React.createElement("div", { className: "stat-label" }, "Employees")),
+                    React.createElement("div", { className: "stat-card" }, React.createElement("div", { className: "stat-number" }, overallStats.currentlyWorking), React.createElement("div", { className: "stat-label" }, "Working")),
+                    React.createElement("div", { className: "stat-card", style: { background: "linear-gradient(135deg, #ff9800, #f57c00)" } }, React.createElement("div", { className: "stat-number" }, overallStats.onLunchBreak), React.createElement("div", { className: "stat-label" }, "Lunch")),
+                    React.createElement("div", { className: "stat-card" }, React.createElement("div", { className: "stat-number" }, overallStats.totalCheckInsToday), React.createElement("div", { className: "stat-label" }, "Checked In")),
+                    React.createElement("div", { className: "stat-card", style: { background: "linear-gradient(135deg, #f44336, #d32f2f)" } }, React.createElement("div", { className: "stat-number" }, overallStats.lateToday), React.createElement("div", { className: "stat-label" }, "Late")),
+                    React.createElement("div", { className: "stat-card" }, React.createElement("div", { className: "stat-number" }, overallStats.totalHoursToday), React.createElement("div", { className: "stat-label" }, "Hours"))
+                ),
+                showUserManagement && isAdmin && React.createElement("div", { className: "card" },
+                    React.createElement("h3", null, "User Management"),
+                    React.createElement(UserManagement, { refreshTrigger: refreshTrigger, currentUser: user })
+                ),
+                showReport && reportData && React.createElement("div", { className: "card" },
+                    React.createElement("h3", null, reportData.month, " Report"),
+                    React.createElement("table", { className: "report-table" },
+                        React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "Employee"), React.createElement("th", null, "Position"), React.createElement("th", null, "Days"), React.createElement("th", null, "Hours"), React.createElement("th", null, "Late"))),
+                        React.createElement("tbody", null, reportData.report.map((r, i) => React.createElement("tr", { key: i }, React.createElement("td", null, r.name), React.createElement("td", null, r.position), React.createElement("td", null, r.daysPresent), React.createElement("td", null, r.hours), React.createElement("td", null, r.lateDays))))
+                    )
+                ),
+                isAdmin && React.createElement("div", { className: "card" },
+                    React.createElement("div", { style: { display: "flex", gap: "12px", flexWrap: "wrap" } },
+                        React.createElement("input", { style: { flex: 1 }, type: "text", placeholder: "Employee name", value: newEmpName, onChange: e => setNewEmpName(e.target.value), onKeyPress: e => e.key === 'Enter' && handleAddEmployee() }),
+                        React.createElement("select", { value: newEmpPosition, onChange: e => setNewEmpPosition(e.target.value) },
+                            React.createElement("option", { value: "Farm Manager" }, "Farm Manager"),
+                            React.createElement("option", { value: "Farm Supervisor" }, "Farm Supervisor"),
+                            React.createElement("option", { value: "Field Worker" }, "Field Worker"),
+                            React.createElement("option", { value: "Equipment Operator" }, "Equipment Operator")
+                        ),
+                        React.createElement("button", { onClick: () => addEmployee(newEmpName, newEmpPosition, refreshData) && setNewEmpName("") }, React.createElement("i", { className: "fas fa-user-plus" }), " Add")
+                    )
+                )
+            ),
+            React.createElement("div", { className: "employee-grid" }, displayedEmployees.map(renderEmployeeCard)),
+            React.createElement("div", { className: "modal", id: "calendarModal", style: { display: showCalendar ? "flex" : "none" }, onClick: (e) => { if(e.target.className === "modal") setShowCalendar(false); } },
+                React.createElement("div", { className: "modal-content", style: { maxWidth: "800px" } },
+                    React.createElement(AttendanceCalendar, { employee: selectedEmployee, refreshTrigger: refreshTrigger, onClose: () => setShowCalendar(false) })
+                )
+            ),
+            React.createElement("div", { className: "modal", id: "historyModal", style: { display: showHistory ? "flex" : "none" }, onClick: (e) => { if(e.target.className === "modal") setShowHistory(false); } },
+                React.createElement("div", { className: "modal-content", style: { maxWidth: "600px" } },
+                    React.createElement(AttendanceHistory, { employee: selectedEmployee, onClose: () => setShowHistory(false), currentUser: user })
+                )
+            )
+        );
+    }
+    
+    function App() {
+        const [user, setUser] = useState(null);
+        useEffect(() => { loadData(); }, []);
+        if(!user) return React.createElement(LoginScreen, { onLogin: setUser });
+        return React.createElement(MainApp, { user: user, onLogout: () => setUser(null) });
+    }
+    
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+</script>
+</body>
+</html>
